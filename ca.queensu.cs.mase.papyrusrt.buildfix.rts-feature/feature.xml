@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="ca.queensu.cs.mase.papyrusrt.buildfix.rts-feature"
+      label="RTS Support"
+      version="1.0.0.qualifier"
+      provider-name="MASE">
+
+   <requires>
+      <import feature="org.eclipse.papyrusrt.rts-feature" version="1.0.0.201707181457" patch="true"/>
+   </requires>
+
+   <plugin
+         id="org.eclipse.papyrusrt.rts"
+         download-size="0"
+         install-size="0"
+         version="1.0.0.qualifier"/>
+
+</feature>

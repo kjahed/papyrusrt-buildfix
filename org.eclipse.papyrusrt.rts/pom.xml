@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+	xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<modelVersion>4.0.0</modelVersion>
+	<artifactId>org.eclipse.papyrusrt.rts</artifactId>
+	<groupId>org.eclipse.papyrusrt</groupId>
+	<version>1.0.0-SNAPSHOT</version>
+	<packaging>eclipse-plugin</packaging>
+
+	<parent>
+		<groupId>org.eclipse.papyrusrt</groupId>
+		<artifactId>org.eclipse.papyrusrt.runtime</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+		<relativePath>..</relativePath>
+	</parent>
+
+	<profiles>
+		<!-- Only build the run-time on supported platforms (so far, Linux). -->
+		<profile>
+			<id>build-runtime</id>
+			<activation>
+				<os>
+					<family>unix</family>
+					<name>Linux</name>
+				</os>
+			</activation>
+			
+			<build>
+				<plugins>
+					<plugin>
+						<artifactId>maven-antrun-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>make</id>
+								<phase>generate-sources</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target name="make">
+										<taskdef resource="net/sf/antcontrib/antcontrib.properties"
+											classpathref="maven.plugin.classpath" />
+										<copy todir="${project.basedir}/umlrts">
+											<fileset dir="${project.basedir}/../../runtime/rts" />
+										</copy>
+										<exec executable="make" dir="${project.basedir}/umlrts"
+											failonerror="true">
+											<!-- These need to be args rather then env-vars because the RTS 
+												makefile does not respect values inherited from the environment. -->
+											<arg value="DEBUG=1" />
+											<arg value="DEPEND=0" />
+											<arg value="all" />
+										</exec>
+										<delete file="${project.basedir}/umlrts/.cproject" />
+										<delete file="${project.basedir}/umlrts/.project" />
+										<delete dir="${project.basedir}/umlrts/obj" />
+									</target>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>		
+
+</project>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="ca.queensu.cs.mase.papyrusrt.buildfix.codegen-feature"
+      label="Code Generator Support"
+      version="1.0.0.qualifier"
+      provider-name="MASE">
+
+   <requires>
+      <import feature="org.eclipse.papyrusrt.codegen-feature" version="1.0.0.201707181457" patch="true"/>
+   </requires>
+
+   <plugin
+         id="org.eclipse.papyrusrt.codegen.cpp"
+         download-size="0"
+         install-size="0"
+         version="1.0.0.qualifier"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.papyrusrt.codegen.cpp.rts"
+         download-size="0"
+         install-size="0"
+         version="1.0.0.qualifier"
+         unpack="false"/>
+
+</feature>

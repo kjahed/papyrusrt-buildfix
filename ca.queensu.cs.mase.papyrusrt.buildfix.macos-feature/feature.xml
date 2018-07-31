@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="ca.queensu.cs.mase.papyrusrt.buildfix.macos-feature"
+      label="macOS Support"
+      version="1.0.0.qualifier"
+      provider-name="MASE"
+      os="macosx">
+
+   <requires>
+      <import feature="org.eclipse.cdt.native" version="9.3.0.201706122201" patch="true"/>
+   </requires>
+
+   <plugin
+         id="org.eclipse.cdt.core.macosx"
+         download-size="0"
+         install-size="0"
+         version="5.3.0.qualifier"
+         fragment="true"
+         unpack="false"/>
+
+</feature>
