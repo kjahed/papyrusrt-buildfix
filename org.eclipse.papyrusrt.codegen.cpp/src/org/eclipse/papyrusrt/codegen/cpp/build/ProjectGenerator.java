@@ -145,8 +145,12 @@ public final class ProjectGenerator {
 
 				addTarget(project, "all");
 				addTarget(project, "clean");
-
 				addLaunchConfiguration(project.getName());
+				
+				new EclipseCppCodeAnalysisPrefsGenerator().generate(
+						project.getFolder(".settings").getFile(
+								"org.eclipse.cdt.codan.core.prefs").getRawLocation().makeAbsolute().toOSString());
+				
 			} catch (CoreException | BuildException e) {
 				CodeGenPlugin.error(e);
 				project = null;
