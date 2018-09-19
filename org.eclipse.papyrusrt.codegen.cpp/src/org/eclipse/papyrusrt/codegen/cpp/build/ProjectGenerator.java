@@ -57,6 +57,7 @@ import org.eclipse.cdt.managedbuilder.internal.core.ManagedProject;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -495,6 +496,7 @@ public final class ProjectGenerator {
 		ILaunchManager manager = DebugPlugin.getDefault().getLaunchManager();
 		ILaunchConfigurationType type = manager.getLaunchConfigurationType("org.eclipse.cdt.launch.applicationLaunchType");
 		ILaunchConfigurationWorkingCopy workingCopy = type.newInstance(null, targetProjectName);
+		workingCopy.setMappedResources(new IResource[] {cProject.getProject()});
 		workingCopy.setAttribute(ICDTLaunchConfigurationConstants.ATTR_PROJECT_NAME, targetProjectName);
 		workingCopy.setAttribute(ICDTLaunchConfigurationConstants.ATTR_PROGRAM_NAME, "Debug" + File.separator + targetProjectName + binaryExtention);
 		workingCopy.doSave();

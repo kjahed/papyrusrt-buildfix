@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <site>
-   <feature url="features/ca.queensu.cs.mase.papyrusrt.buildfix_1.0.0.201808200926.jar" id="ca.queensu.cs.mase.papyrusrt.buildfix" version="1.0.0.201808200926">
+   <feature url="features/ca.queensu.cs.mase.papyrusrt.buildfix_1.0.0.201809161356.jar" id="ca.queensu.cs.mase.papyrusrt.buildfix" version="1.0.0.201809161356">
       <category name="buildfix"/>
    </feature>
-   <feature url="features/ca.queensu.cs.mase.papyrusrt.buildfix.macos-feature_1.0.0.201808200926.jar" id="ca.queensu.cs.mase.papyrusrt.buildfix.macos-feature" version="1.0.0.201808200926" os="macosx" patch="true">
+   <feature url="features/ca.queensu.cs.mase.papyrusrt.buildfix.macos-feature_1.0.0.201807310004.jar" id="ca.queensu.cs.mase.papyrusrt.buildfix.macos-feature" version="1.0.0.201807310004" os="macosx" patch="true">
       <category name="buildfix"/>
    </feature>
    <category-def name="buildfix" label="Generated CDT Project Build Fix"/>
