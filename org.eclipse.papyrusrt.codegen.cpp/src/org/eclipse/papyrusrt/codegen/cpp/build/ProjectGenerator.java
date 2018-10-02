@@ -135,7 +135,7 @@ public final class ProjectGenerator {
 			try {
 				IProjectDescription description = workspace.newProjectDescription(projectName);
 				project = CCorePlugin.getDefault().createCDTProject(description, project, monitor);
-
+						
 				setupCPPProject(project, monitor);
 
 				String rtsroot = getUMLRTSRootEnv();
@@ -391,6 +391,7 @@ public final class ProjectGenerator {
 					}
 				}
 			}
+			
 			CoreModel.getDefault().setProjectDescription(project, projectDescription);
 		}
 	}
@@ -430,12 +431,12 @@ public final class ProjectGenerator {
 					IOption[] options = tool.getOptions();
 					for (IOption option : options) {
 						if (option.getValueType() == IOption.LIBRARY_PATHS)
-							option.setValue(new String[] { '"' + wsPath + '"' });
+							ManagedBuildManager.setOption(configurations[i], tool, option, new String[] { '"' + wsPath + '"' });
 					}
 				}
 			}
-
-			ManagedBuildManager.updateCoreSettings(project, configurations);
+			
+			CoreModel.getDefault().setProjectDescription(project, projectDescription);
 		}
 	}
 
@@ -471,12 +472,12 @@ public final class ProjectGenerator {
 					IOption[] options = tool.getOptions();
 					for (IOption option : options) {
 						if (option.getValueType() == IOption.LIBRARIES)
-							option.setValue(libraries);
+							ManagedBuildManager.setOption(configurations[i], tool, option, libraries);
 					}
 				}
 			}
 
-			ManagedBuildManager.updateCoreSettings(project, configurations);
+			CoreModel.getDefault().setProjectDescription(project, projectDescription);
 		}
 	}
 
