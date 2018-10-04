@@ -11,7 +11,6 @@
  *******************************************************************************/
 package org.eclipse.papyrusrt.codegen.cpp.build;
 
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,8 +19,13 @@ import java.util.SortedMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.eclipse.cdt.codan.core.CodanRuntime;
+import org.eclipse.cdt.codan.core.model.IProblem;
+import org.eclipse.cdt.codan.core.model.IProblemProfile;
+import org.eclipse.cdt.codan.internal.core.model.CodanProblem;
 import org.eclipse.cdt.core.CCProjectNature;
 import org.eclipse.cdt.core.CCorePlugin;
+import org.eclipse.cdt.core.dom.IPDOMManager;
 import org.eclipse.cdt.core.envvar.IEnvironmentVariable;
 import org.eclipse.cdt.core.model.CoreModel;
 import org.eclipse.cdt.core.model.ICModel;
@@ -65,6 +69,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.debug.core.DebugPlugin;
+import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationType;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 import org.eclipse.debug.core.ILaunchManager;
@@ -147,9 +152,22 @@ public final class ProjectGenerator {
 				addTarget(project, "clean");
 				addLaunchConfiguration(project.getName());
 				
-				new EclipseCppCodeAnalysisPrefsGenerator().generate(
-						project.getFolder(".settings").getFile(
-								"org.eclipse.cdt.codan.core.prefs").getRawLocation().makeAbsolute().toOSString());
+				// disable indexing
+				ICModel cModel = CoreModel.create(ResourcesPlugin.getWorkspace().getRoot());
+				ICProject cProject = cModel.getCProject(project.getName());
+				CCorePlugin.getIndexManager().setIndexerId(cProject, IPDOMManager.ID_NO_INDEXER);
+
+				// disable code analysis
+				IProblemProfile profile = CodanRuntime.getInstance().getCheckersRegistry()
+						.getResourceProfileWorkingCopy(project);
+				
+				IProblem[] problems = profile.getProblems();
+				for (int i = 0; i < problems.length; i++) {
+					IProblem p = problems[i];
+					((CodanProblem) p).setEnabled(false);
+				}
+
+				CodanRuntime.getInstance().getCheckersRegistry().updateProfile(project, profile);
 				
 			} catch (CoreException | BuildException e) {
 				CodeGenPlugin.error(e);
@@ -500,8 +518,15 @@ public final class ProjectGenerator {
 
 		ILaunchManager manager = DebugPlugin.getDefault().getLaunchManager();
 		ILaunchConfigurationType type = manager.getLaunchConfigurationType("org.eclipse.cdt.launch.applicationLaunchType");
-		ILaunchConfigurationWorkingCopy workingCopy = type.newInstance(null, targetProjectName);
-		workingCopy.setMappedResources(new IResource[] {cProject.getProject()});
+		for(ILaunchConfiguration conf : manager.getLaunchConfigurations(type)) {
+			if(conf.getName().equals(targetProjectName)) {
+				conf.delete();
+				break;
+			}
+		}
+		
+		ILaunchConfigurationWorkingCopy workingCopy = type.newInstance(cProject.getProject(), targetProjectName);
+		workingCopy.setMappedResources(new IResource[] {cProject.getResource(), cProject.getProject()});
 		workingCopy.setAttribute(ICDTLaunchConfigurationConstants.ATTR_PROJECT_NAME, targetProjectName);
 		workingCopy.setAttribute(ICDTLaunchConfigurationConstants.ATTR_PROGRAM_NAME, "Debug" + File.separator + targetProjectName + binaryExtention);
 		workingCopy.doSave();
