@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature url="features/ca.queensu.cs.mase.papyrusrt.buildfix.codegen-feature_1.0.0.201812301530.jar" id="ca.queensu.cs.mase.papyrusrt.buildfix.codegen-feature" version="1.0.0.201812301530" patch="true"/>
+   <feature url="features/ca.queensu.cs.mase.papyrusrt.buildfix.macos-feature_1.0.0.201812301530.jar" id="ca.queensu.cs.mase.papyrusrt.buildfix.macos-feature" version="1.0.0.201812301530" os="macosx" patch="true"/>
+   <feature url="features/ca.queensu.cs.mase.papyrusrt.buildfix.rts-feature_1.0.0.201812301530.jar" id="ca.queensu.cs.mase.papyrusrt.buildfix.rts-feature" version="1.0.0.201812301530" patch="true"/>
+</site>
