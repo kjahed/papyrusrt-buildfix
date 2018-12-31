@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#ifdef HAS_SYS_SOCKET_H
+#ifndef FIONREAD			// cygwin support
 #include <sys/socket.h>
 #endif
 #include "basedebug.hh"
