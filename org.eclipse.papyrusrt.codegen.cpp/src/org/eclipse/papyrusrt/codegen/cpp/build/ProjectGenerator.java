@@ -30,12 +30,14 @@ import org.eclipse.cdt.core.envvar.IEnvironmentVariable;
 import org.eclipse.cdt.core.model.CoreModel;
 import org.eclipse.cdt.core.model.ICModel;
 import org.eclipse.cdt.core.model.ICProject;
+import org.eclipse.cdt.core.settings.model.CSourceEntry;
 import org.eclipse.cdt.core.settings.model.ICConfigurationDescription;
 import org.eclipse.cdt.core.settings.model.ICLanguageSetting;
 import org.eclipse.cdt.core.settings.model.ICLanguageSettingEntry;
 import org.eclipse.cdt.core.settings.model.ICProjectDescription;
 import org.eclipse.cdt.core.settings.model.ICProjectDescriptionManager;
 import org.eclipse.cdt.core.settings.model.ICSettingEntry;
+import org.eclipse.cdt.core.settings.model.ICSourceEntry;
 import org.eclipse.cdt.core.settings.model.extension.CConfigurationData;
 import org.eclipse.cdt.core.settings.model.util.CDataUtil;
 import org.eclipse.cdt.debug.core.ICDTLaunchConfigurationConstants;
@@ -59,12 +61,14 @@ import org.eclipse.cdt.managedbuilder.internal.core.Configuration;
 import org.eclipse.cdt.managedbuilder.internal.core.ManagedBuildInfo;
 import org.eclipse.cdt.managedbuilder.internal.core.ManagedProject;
 import org.eclipse.core.resources.IContainer;
+import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
@@ -144,9 +148,18 @@ public final class ProjectGenerator {
 				setupCPPProject(project, monitor);
 
 				String rtsroot = getUMLRTSRootEnv();
-				addIncludePath(project.getName(), rtsroot, "include");
-				addLibraryPath(project.getName(), rtsroot, getRTSDirectory());
-				addLibraries(project.getName(), "rts", "pthread");
+				addIncludePath(project.getName(), new Path(rtsroot).append("include"),
+					new Path(rtsroot).append("umlrt/src/include"),
+					new Path(rtsroot).append("os/linux/include"),
+					new Path(rtsroot).append("util/include"));	
+				
+				addExtraSourcePath(project.getName(), "RTS", 
+						new Path(rtsroot),
+						new Path("os/windows"),
+						new Path("os/stub"));
+				
+				
+				addLibraries(project.getName(), "pthread");
 
 				addTarget(project, "all");
 				addTarget(project, "clean");
@@ -227,7 +240,16 @@ public final class ProjectGenerator {
 
 				config.setName(cfg.getName());
 				config.setArtifactName(mProj.getDefaultArtifactName());
+				
+				if(os.startsWith("mac")) {
+					ITool[] tools = tc.get().getToolsBySuperClassId("cdt.managedbuild.tool.gnu.cpp.compiler.macosx.exe.debug");
+					for(ITool tool : tools) {
+						IOption option = tool.getOptionBySuperClassId("gnu.cpp.compiler.option.other.other");
+						ManagedBuildManager.setOption(cfg, tool, option, "-c -fmessage-length=0 -DNEED_PTHREAD_MUTEX_TIMEDLOCK -DNEED_SEM_TIMEDWAIT");
+					}
+				}
 			}
+			
 			mngr.setProjectDescription(project, desc);
 
 		} else {
@@ -327,7 +349,7 @@ public final class ProjectGenerator {
 		newTarget.setRunAllBuilders(false);
 		newTarget.setBuildAttribute(IMakeTarget.BUILD_TARGET, targetName);
 		newTarget.setUseDefaultBuildCmd(true);
-
+		
 		// get current target
 		IContainer container = project.getFolder("src");
 		IMakeTarget target = manager.findTarget(container, targetName);
@@ -373,17 +395,15 @@ public final class ProjectGenerator {
 	}
 
 	/**
-	 * Add include path to RTS include.
+	 * Add include paths to RTS include.
 	 * 
 	 * @param targetProjectName
 	 *            project
-	 * @param basePath
-	 *            base path
-	 * @param path
-	 *            actual path
+	 * @param paths
+	 *            list of actual paths
 	 * @throws CoreException
 	 */
-	public static void addIncludePath(String targetProjectName, String basePath, String path) throws CoreException {
+	public static void addIncludePath(String targetProjectName, IPath ... paths) throws CoreException {
 		ICModel cModel = CoreModel.create(ResourcesPlugin.getWorkspace().getRoot());
 		ICProject cProject = cModel.getCProject(targetProjectName);
 		if (!cProject.exists()) {
@@ -392,7 +412,6 @@ public final class ProjectGenerator {
 
 		if (CoreModel.getDefault().isNewStyleProject(cProject.getProject())) {
 			final IProject project = cProject.getProject();
-			final String wsPath = new Path(basePath).makeAbsolute().append(path).toString();
 
 			final ICProjectDescription projectDescription = CoreModel.getDefault().getProjectDescription(project, true);
 			final ICConfigurationDescription[] configurations = projectDescription.getConfigurations();
@@ -403,13 +422,64 @@ public final class ProjectGenerator {
 						final ICLanguageSettingEntry[] entries = langSetting.getSettingEntries(ICSettingEntry.INCLUDE_PATH);
 						final List<ICLanguageSettingEntry> list = new ArrayList<>(
 								Arrays.asList(entries));
-						list.add(CDataUtil.createCIncludePathEntry(wsPath, ICSettingEntry.INCLUDE_PATH | ICSettingEntry.READONLY));
+						
+						for(IPath path : paths)
+							list.add(CDataUtil.createCIncludePathEntry(path.makeAbsolute().toString(), ICSettingEntry.INCLUDE_PATH | ICSettingEntry.READONLY));
+						
 						langSetting.setSettingEntries(ICSettingEntry.INCLUDE_PATH,
 								list.toArray(new ICLanguageSettingEntry[list.size()]));
 					}
 				}
 			}
 			
+			CoreModel.getDefault().setProjectDescription(project, projectDescription);
+		}
+	}
+	
+	/**
+	 * Add extra source folder to project.
+	 * 
+	 * @param targetProjectName
+	 *            project
+	 * @param folderName
+	 *            project linked folder name
+	 * @param sourcePath
+	 *            actual path to source folder
+	 * @param excludePaths
+	 * 			  paths to exclude relative to sourcePath
+	 * @throws CoreException
+	 */
+	public static void addExtraSourcePath(String targetProjectName, String folderName, IPath sourcePath, IPath ... excludePaths) throws CoreException {
+		ICModel cModel = CoreModel.create(ResourcesPlugin.getWorkspace().getRoot());
+		ICProject cProject = cModel.getCProject(targetProjectName);
+		if (!cProject.exists()) {
+			return;
+		}
+
+		if (CoreModel.getDefault().isNewStyleProject(cProject.getProject())) {
+			final IProject project = cProject.getProject();
+			final ICProjectDescription projectDescription = CoreModel.getDefault().getProjectDescription(project, true);
+	        ICConfigurationDescription activeConfig = projectDescription.getActiveConfiguration();
+	        ICSourceEntry[] sourceEntries = activeConfig.getSourceEntries();
+	        List<ICSourceEntry> sourceEntriesList = new ArrayList<>();
+	        
+	        // link local folder to system source folder
+	        IFolder folder = project.getFolder(folderName);
+	        folder.createLink(sourcePath, IResource.NONE, null);
+	        
+	        // exclude folderName from main source entry
+	        ICSourceEntry mainEntry = sourceEntries[0];
+        		List<IPath> mainEntryExclusionPatterns = new ArrayList<>(Arrays.asList(mainEntry.getExclusionPatterns()));
+        		mainEntryExclusionPatterns.add(new Path(folderName));
+        		sourceEntriesList.add(new CSourceEntry(mainEntry.getFullPath(), mainEntryExclusionPatterns.toArray(
+        				new IPath[mainEntryExclusionPatterns.size()]), mainEntry.getFlags()));
+	        
+        		// add new entry
+	        CSourceEntry newEntry = new CSourceEntry(folderName, excludePaths, ICSourceEntry.SOURCE_PATH|ICSourceEntry.RESOLVED);
+	        sourceEntriesList.add(newEntry);
+	        
+	        activeConfig.setSourceEntries(sourceEntriesList.toArray(new CSourceEntry[sourceEntriesList.size()]));
+	        projectDescription.setActiveConfiguration(activeConfig);
 			CoreModel.getDefault().setProjectDescription(project, projectDescription);
 		}
 	}
