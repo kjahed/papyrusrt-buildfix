@@ -12,9 +12,18 @@
 package org.eclipse.papyrusrt.codegen.cpp.build;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.MissingResourceException;
 import java.util.SortedMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -26,6 +35,7 @@ import org.eclipse.cdt.codan.internal.core.model.CodanProblem;
 import org.eclipse.cdt.core.CCProjectNature;
 import org.eclipse.cdt.core.CCorePlugin;
 import org.eclipse.cdt.core.dom.IPDOMManager;
+import org.eclipse.cdt.core.envvar.IContributedEnvironment;
 import org.eclipse.cdt.core.envvar.IEnvironmentVariable;
 import org.eclipse.cdt.core.model.CoreModel;
 import org.eclipse.cdt.core.model.ICModel;
@@ -60,6 +70,7 @@ import org.eclipse.cdt.managedbuilder.core.ManagedBuildManager;
 import org.eclipse.cdt.managedbuilder.internal.core.Configuration;
 import org.eclipse.cdt.managedbuilder.internal.core.ManagedBuildInfo;
 import org.eclipse.cdt.managedbuilder.internal.core.ManagedProject;
+import org.eclipse.cdt.utils.Platform;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
@@ -68,6 +79,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -80,6 +92,7 @@ import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.papyrusrt.codegen.CodeGenPlugin;
 import org.eclipse.papyrusrt.codegen.cpp.rts.UMLRTSUtil;
 import org.eclipse.uml2.uml.util.UMLUtil;
+import org.osgi.framework.Bundle;
 
 /**
  * UMLRT Codegen CDT project generator.
@@ -147,17 +160,13 @@ public final class ProjectGenerator {
 						
 				setupCPPProject(project, monitor);
 
-				String rtsroot = getUMLRTSRootEnv();
-				addIncludePath(project.getName(), new Path(rtsroot).append("include"),
-					new Path(rtsroot).append("umlrt/src/include"),
-					new Path(rtsroot).append("os/linux/include"),
-					new Path(rtsroot).append("util/include"));	
+				String rtsRoot = getUMLRTSRootEnv();
+				addIncludePath(project.getName(), findIncludeDirs(rtsRoot));	
 				
 				addExtraSourcePath(project.getName(), "RTS", 
-						new Path(rtsroot),
+						new Path(rtsRoot), 						
 						new Path("os/windows"),
 						new Path("os/stub"));
-				
 				
 				addLibraries(project.getName(), "pthread");
 
@@ -191,6 +200,22 @@ public final class ProjectGenerator {
 		return project;
 	}
 
+	private static Collection<String> findIncludeDirs(String rtsRoot) {
+		Collection<String> dirs = new HashSet<>();
+		LinkedList<java.nio.file.Path> files = new LinkedList<>();
+	    try {
+			Files.find(Paths.get(rtsRoot), 999, (p, bfa) -> bfa.isRegularFile() && 
+					(p.getFileName().toString().matches(".*\\.h")
+							|| p.getFileName().toString().matches(".*\\.hh")
+							|| p.getFileName().toString().matches(".*\\.hpp"))).forEach(files::add);
+			for(java.nio.file.Path path : files)
+	    			dirs.add(path.getParent().toFile().getAbsolutePath());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return dirs;
+	}
+	
 	/**
 	 * Setup CPP project.
 	 * 
@@ -246,6 +271,23 @@ public final class ProjectGenerator {
 					for(ITool tool : tools) {
 						IOption option = tool.getOptionBySuperClassId("gnu.cpp.compiler.option.other.other");
 						ManagedBuildManager.setOption(cfg, tool, option, "-c -fmessage-length=0 -DNEED_PTHREAD_MUTEX_TIMEDLOCK -DNEED_SEM_TIMEDWAIT");
+					}
+				}
+				
+				if(os.startsWith("win")) {
+					try {
+						Bundle bundle = Platform.getBundle("ca.queensu.cs.mase.papyrusrt.buildfix.cygwin");
+						Path path = new Path("cygwin64");
+						path.append("bin");
+						URL cygwinURL = FileLocator.find(bundle, path, null);
+						if(cygwinURL != null) {
+							File cygwinFolder = new File(cygwinURL.toURI());
+							IContributedEnvironment environment = CCorePlugin.getDefault().getBuildEnvironmentManager().getContributedEnvironment();
+							environment.addVariable("PATH", cygwinFolder.getAbsolutePath(), IEnvironmentVariable.ENVVAR_REPLACE, null, cfgDes);
+						}
+						
+					} catch(MissingResourceException | URISyntaxException  e) {
+						
 					}
 				}
 			}
@@ -403,7 +445,7 @@ public final class ProjectGenerator {
 	 *            list of actual paths
 	 * @throws CoreException
 	 */
-	public static void addIncludePath(String targetProjectName, IPath ... paths) throws CoreException {
+	public static void addIncludePath(String targetProjectName, Collection<String> paths) throws CoreException {
 		ICModel cModel = CoreModel.create(ResourcesPlugin.getWorkspace().getRoot());
 		ICProject cProject = cModel.getCProject(targetProjectName);
 		if (!cProject.exists()) {
@@ -423,8 +465,8 @@ public final class ProjectGenerator {
 						final List<ICLanguageSettingEntry> list = new ArrayList<>(
 								Arrays.asList(entries));
 						
-						for(IPath path : paths)
-							list.add(CDataUtil.createCIncludePathEntry(path.makeAbsolute().toString(), ICSettingEntry.INCLUDE_PATH | ICSettingEntry.READONLY));
+						for(String path : paths)
+							list.add(CDataUtil.createCIncludePathEntry(path, ICSettingEntry.INCLUDE_PATH | ICSettingEntry.READONLY));
 						
 						langSetting.setSettingEntries(ICSettingEntry.INCLUDE_PATH,
 								list.toArray(new ICLanguageSettingEntry[list.size()]));

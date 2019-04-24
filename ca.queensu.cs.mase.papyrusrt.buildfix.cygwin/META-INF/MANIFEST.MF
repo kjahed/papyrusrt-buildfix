@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Papyrus-RT Cygwin C++ Compiler
+Bundle-SymbolicName: ca.queensu.cs.mase.papyrusrt.buildfix.cygwin
+Bundle-Version: 1.0.0.qualifier
+Automatic-Module-Name: ca.queensu.cs.mase.papyrusrt.buildfix.cygwin
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
