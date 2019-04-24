@@ -160,13 +160,15 @@ public final class ProjectGenerator {
 						
 				setupCPPProject(project, monitor);
 
-				String rtsRoot = getUMLRTSRootEnv();
-				addIncludePath(project.getName(), findIncludeDirs(rtsRoot));	
+				String rtsRoot = new File(getUMLRTSRootEnv()).getAbsolutePath();
+				addIncludePath(project.getName(), 
+						findIncludeDirs(rtsRoot),
+						new Path("os").append("windows").append("include"));	
 				
 				addExtraSourcePath(project.getName(), "RTS", 
 						new Path(rtsRoot), 						
-						new Path("os/windows"),
-						new Path("os/stub"));
+						new Path("os").append("windows"),
+						new Path("os").append("stub"));
 				
 				addLibraries(project.getName(), "pthread");
 
@@ -275,19 +277,17 @@ public final class ProjectGenerator {
 				}
 				
 				if(os.startsWith("win")) {
-					try {
-						Bundle bundle = Platform.getBundle("ca.queensu.cs.mase.papyrusrt.buildfix.cygwin");
+					Bundle bundle = Platform.getBundle("ca.queensu.cs.mase.papyrusrt.buildfix.cygwin");
+					if (bundle != null) {
 						Path path = new Path("cygwin64");
-						path.append("bin");
-						URL cygwinURL = FileLocator.find(bundle, path, null);
-						if(cygwinURL != null) {
-							File cygwinFolder = new File(cygwinURL.toURI());
+						URL url = FileLocator.find(bundle, path, null);
+						try {
+							String cygwinPath = FileLocator.resolve(url).getPath();
 							IContributedEnvironment environment = CCorePlugin.getDefault().getBuildEnvironmentManager().getContributedEnvironment();
-							environment.addVariable("PATH", cygwinFolder.getAbsolutePath(), IEnvironmentVariable.ENVVAR_REPLACE, null, cfgDes);
+							environment.addVariable("PATH", cygwinPath, IEnvironmentVariable.ENVVAR_REPLACE, null, cfgDes);
+						} catch (Exception e) {
+							e.printStackTrace();
 						}
-						
-					} catch(MissingResourceException | URISyntaxException  e) {
-						
 					}
 				}
 			}
@@ -445,7 +445,7 @@ public final class ProjectGenerator {
 	 *            list of actual paths
 	 * @throws CoreException
 	 */
-	public static void addIncludePath(String targetProjectName, Collection<String> paths) throws CoreException {
+	public static void addIncludePath(String targetProjectName, Collection<String> paths, IPath ... excludes) throws CoreException {
 		ICModel cModel = CoreModel.create(ResourcesPlugin.getWorkspace().getRoot());
 		ICProject cProject = cModel.getCProject(targetProjectName);
 		if (!cProject.exists()) {
@@ -465,8 +465,14 @@ public final class ProjectGenerator {
 						final List<ICLanguageSettingEntry> list = new ArrayList<>(
 								Arrays.asList(entries));
 						
-						for(String path : paths)
+						out: 
+						for(String path : paths) {
+							for(IPath exclude : excludes)
+								if(path.endsWith(exclude.toString()))
+									continue out;
+							
 							list.add(CDataUtil.createCIncludePathEntry(path, ICSettingEntry.INCLUDE_PATH | ICSettingEntry.READONLY));
+						}
 						
 						langSetting.setSettingEntries(ICSettingEntry.INCLUDE_PATH,
 								list.toArray(new ICLanguageSettingEntry[list.size()]));
