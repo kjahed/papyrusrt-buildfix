@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
       id="ca.queensu.cs.mase.papyrusrt.buildfix.codegen-feature"
-      label="Code Generator Support"
+      label="Code Generator Patch"
       version="1.0.0.qualifier"
       provider-name="MASE">
 
