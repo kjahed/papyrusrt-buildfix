@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+    <extension point="org.eclipse.ui.commands">
+        <category
+            name="UML-RT Commands"
+            description="Commands related to the PapyrusRT UML-RT implementation"
+            id="org.eclipse.papyrusrt.codegen.papyrus.commands-category"/>
+        <command
+            name="Generate code (incremental)"
+            description="Generate code for the selected element of a UML-RT model"
+            categoryId="org.eclipse.papyrusrt.codegen.papyrus.commands-category"
+            id="org.eclipse.papyrusrt.codegen.papyrus.codegen"/>
+        <command
+              categoryId="org.eclipse.papyrusrt.codegen.papyrus.commands-category"
+              description="Regenerates all code for the selected element(s) of a UML-RT model"
+              id="org.eclipse.papyrusrt.codegen.papyrus.codegen.regen"
+              name="Regenerate all code">
+        </command>            
+        <command
+              categoryId="org.eclipse.papyrusrt.codegen.papyrus.commands-category"
+              description="Set Default Top for UML-RT Model"
+              id="org.eclipse.papyrusrt.codegen.papyrus.setAsDefaultTop"
+              name="Set as default top capsule">
+        </command>
+        <command
+              categoryId="org.eclipse.papyrusrt.codegen.papyrus.commands-category"
+              description="Generate a capsule as Top"
+              id="org.eclipse.papyrusrt.codegen.papyrus.generateAsTop"
+              name="Generate with this capsule as top">
+        </command>
+    </extension>
+
+    <extension point="org.eclipse.ui.handlers">
+        <handler
+            commandId="org.eclipse.papyrusrt.codegen.papyrus.codegen"
+            class="org.eclipse.papyrusrt.codegen.papyrus.handlers.UMLRTCppCodeGen">
+        </handler>
+        <handler
+              class="org.eclipse.papyrusrt.codegen.papyrus.handlers.UMLRTCppCodeReGen"
+              commandId="org.eclipse.papyrusrt.codegen.papyrus.codegen.regen">
+        </handler>        
+        <handler
+              class="org.eclipse.papyrusrt.codegen.papyrus.handlers.SetDefaultTopActionHandler"
+              commandId="org.eclipse.papyrusrt.codegen.papyrus.setAsDefaultTop">
+        </handler>
+         <handler
+              class="org.eclipse.papyrusrt.codegen.papyrus.handlers.GenerateAsTopActionHandler"
+              commandId="org.eclipse.papyrusrt.codegen.papyrus.generateAsTop">
+        </handler>
+    </extension>
+
+    <extension point="org.eclipse.ui.menus">
+        <menuContribution
+            allPopups="true"
+            locationURI="popup:org.eclipse.papyrus.views.modelexplorer.modelexplorer.popup">
+<!--
+            <command
+                  commandId="org.eclipse.papyrusrt.codegen.papyrus.codegen"
+                  label="Generate code (incremental)">
+                <visibleWhen
+                      checkEnabled="false">
+                   <or>
+                      <test
+                            forcePluginActivation="true"
+                            property="org.eclipse.papyrusrt.codegen.papyrus.internal.propertytester.eClass"
+                            value="Model">
+                      </test>
+                      <test
+                            forcePluginActivation="true"
+                            property="org.eclipse.papyrusrt.codegen.papyrus.internal.propertytester.eClass"
+                            value="Package">
+                      </test>
+                   </or>
+                </visibleWhen>
+            </command>
+-->
+            <command
+                  commandId="org.eclipse.papyrusrt.codegen.papyrus.codegen.regen"
+                  label="(Re)Generate (all) code">
+                <visibleWhen
+                      checkEnabled="false">
+                   <or>
+                      <test
+                            forcePluginActivation="true"
+                            property="org.eclipse.papyrusrt.codegen.papyrus.internal.propertytester.eClass"
+                            value="Model">
+                      </test>
+                      <test
+                            forcePluginActivation="true"
+                            property="org.eclipse.papyrusrt.codegen.papyrus.internal.propertytester.eClass"
+                            value="Package">
+                      </test>
+                   </or>
+                </visibleWhen>
+            </command> 
+            <command
+                  commandId="org.eclipse.papyrusrt.codegen.papyrus.setAsDefaultTop"
+                  label="Set as default top capsule"
+                  style="push">
+               <visibleWhen
+                     checkEnabled="false">
+                 <and>
+	                 <test
+                        forcePluginActivation="true"
+                        property="org.eclipse.papyrusrt.codegen.papyrus.internal.propertytester.stereotype"
+                        value="UMLRealTime::Capsule">
+	                 </test>
+                  <count
+                        value="1">
+                  </count>
+                 </and>
+               </visibleWhen>
+            </command>
+             <command
+                   commandId="org.eclipse.papyrusrt.codegen.papyrus.generateAsTop"
+                   label="Generate with this capsule as top"
+                   style="push">
+               <visibleWhen
+                     checkEnabled="false">
+                 <and>
+	                 <test
+                        forcePluginActivation="true"
+                        property="org.eclipse.papyrusrt.codegen.papyrus.internal.propertytester.stereotype"
+                        value="UMLRealTime::Capsule">
+	                 </test>
+                  <count
+                        value="1">
+                  </count>
+                 </and>
+               </visibleWhen>                  
+            </command>
+        </menuContribution>
+    </extension>
+    <extension
+          point="org.eclipse.papyrus.infra.core.service">
+       <service
+             classname="org.eclipse.papyrusrt.codegen.papyrus.internal.ModelCloseService"
+             id="org.eclipse.papyrusrt.codegen.papyrus.modelclose"
+             priority="1"
+             startKind="startup">
+          <dependsOn
+                serviceKeyRef="org.eclipse.papyrus.infra.ui.editor.IMultiDiagramEditor">
+          </dependsOn>
+       </service>
+    </extension>
+
+    <extension
+          point="org.eclipse.ui.bindings">
+       <key
+             commandId="org.eclipse.papyrusrt.codegen.papyrus.codegen"
+             contextId="org.eclipse.papyrus.uml.diagram.composite.ui.diagramContext"
+             schemeId="org.eclipse.papyrusrt.codegen.papyrus.keys"
+             sequence="CTRL+R G">
+       </key>
+    </extension>
+    <extension
+          point="org.eclipse.core.expressions.propertyTesters">
+       <propertyTester
+             class="org.eclipse.papyrusrt.codegen.papyrus.propertytester.UMLRTPropertyTester"
+             id="org.eclipse.papyrusrt.codegen.papyrus.internal.propertytester"
+             namespace="org.eclipse.papyrusrt.codegen.papyrus.internal.propertytester"
+             properties="stereotype, eClass, isSourceEditable"
+             type="java.lang.Object">
+       </propertyTester>
+    </extension>
+    <extension
+          point="org.eclipse.papyrusrt.codegen.eobjectlocator">
+       <eobjectlocator
+             class="org.eclipse.papyrusrt.codegen.papyrus.cdt.UMLEObjectLocator"
+             id="uml">
+       </eobjectlocator>
+    </extension>
+    <extension
+          point="org.eclipse.ui.navigator.navigatorContent">
+       <actionProvider
+             class="org.eclipse.papyrusrt.codegen.papyrus.actionprovider.EditSourceActionProvider"
+             id="org.eclipse.papyrusrt.codegen.papyrus.actionprovider.EditSourceActionProvider"
+             priority="higher">
+          <enablement>
+             <test
+                   forcePluginActivation="true"
+                   property="org.eclipse.papyrusrt.codegen.papyrus.internal.propertytester.isSourceEditable"
+                   value="true">
+             </test>
+          </enablement>
+       </actionProvider>
+    </extension>
+    <extension
+          point="org.eclipse.ui.navigator.viewer">
+       <viewerActionBinding
+             viewerId="org.eclipse.papyrus.views.modelexplorer.modelexplorer">
+          <includes>
+             <actionExtension
+                   pattern="org.eclipse.papyrusrt.codegen.papyrus.actionprovider.*">
+             </actionExtension>
+          </includes>
+       </viewerActionBinding>
+    </extension>
+
+	<extension point="org.eclipse.debug.ui.launchShortcuts">
+	    <shortcut
+	        class="org.eclipse.papyrusrt.codegen.papyrus.launch.PapyrusrtLaunchShortcut"
+	        id="org.eclipse.papyrusrt.codegen.papyrus.launchShortcut"
+	        label="(Re)Generate (all) code"
+	        modes="run">
+	        <contextualLaunch>
+			    <enablement>
+			        <with variable="selection">
+			            <count value="1"/>
+			            
+			       </with>
+			    </enablement>
+			</contextualLaunch> 
+	    </shortcut>
+	</extension>
+</plugin>
